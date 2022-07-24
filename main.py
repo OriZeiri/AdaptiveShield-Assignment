@@ -1,4 +1,3 @@
-from xml.etree.ElementInclude import include
 import requests
 from bs4 import BeautifulSoup, element
 import asyncio
@@ -60,10 +59,13 @@ async def iterate_over_tables(tables : element.ResultSet):
                     if '<br/>' in str(adjectives):
                         # list of adjectives 
                         adjectives = str(adjectives).split('<br/>')
+                         
                         # remove <td> from the first element
                         adjectives[0] = adjectives[0].strip('<td>')
                         # remove </td> from the first element
                         adjectives[-1] = adjectives[-1].strip('</td>')
+
+                        # remove <sup> tag from the adjectives
                         if '<sup' in adjectives[0]:
                             adjectives[0] = adjectives[0].split('<sup')[0]
                         if '<sup' in adjectives[-1]:
@@ -76,33 +78,38 @@ async def iterate_over_tables(tables : element.ResultSet):
 
 
 def export_animals_to_html(animals : dict):
+    # reading template file i created
     with open("template.html", "r") as f:
         doc = BeautifulSoup(f, "html.parser")
     
+    # get the body of the table
     tbody = doc.find('tbody')
     
     for name,adjective in animals.items():
+        # create new tr per item at animals
         new_row = doc.new_tag('tr')
         new_cell_name = doc.new_tag('td')
         new_cell_adjective = doc.new_tag('td')
 
+        # set the data to the new tags
         new_cell_name.string , new_cell_adjective.string = name ,str(adjective)
+
+        # append to row
         new_row.append(new_cell_name)
         new_row.append(new_cell_adjective)
 
+        # append to table
         tbody.append(new_row)
 
+    # create new file with data
     with open ("index.html", "w") as file:
         file.write(str(doc.prettify()))
     
-
-
 
 async def main():
     tables = await connect_to_wikitables()
     animals = await iterate_over_tables(tables)
     export_animals_to_html(animals)
-
 
 
 asyncio.run(main())
